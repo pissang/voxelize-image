@@ -109,6 +109,7 @@ var app = application.create('#main', {
 
         var light = app.createDirectionalLight([-1, -1, -1], '#fff', 2);
         light.shadowResolution = 2048;
+        light.shadowCascade = 2;
         light.shadowBias = 0.01;
 
         this._dirLight = light;
@@ -191,13 +192,14 @@ loadingEl.parentNode.removeChild(loadingEl);
 var gui = new dat.GUI();
 
 var genFolder = gui.addFolder('Generate');
+genFolder.open();
 
 genFolder.add(config, 'scale', 0, 1).onFinishChange(app.methods.updateColumns);
-genFolder.add(config, 'colorContrast', 0, 2).onFinishChange(app.methods.updateColumns);
+// genFolder.add(config, 'colorContrast', 0, 2).onFinishChange(app.methods.updateColumns);
 
-gui.add(config, 'barNumber', 0, 256).onFinishChange(app.methods.updateColumns);
-gui.add(config, 'barSize', 0, 2).onFinishChange(app.methods.updateColumns);
-gui.add(config, 'barBevel', 0, 1).onFinishChange(app.methods.updateColumns);
+genFolder.add(config, 'barNumber', 0, 256).onFinishChange(app.methods.updateColumns);
+genFolder.add(config, 'barSize', 0, 2).onFinishChange(app.methods.updateColumns);
+genFolder.add(config, 'barBevel', 0, 1).onFinishChange(app.methods.updateColumns);
 
 var matFolder = gui.addFolder('Material');
 matFolder.open();
