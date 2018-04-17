@@ -1,4 +1,4 @@
-import { application, plugin } from 'claygl';
+import { application, plugin, core } from 'claygl';
 import ClayAdvancedRenderer from 'claygl-advanced-renderer';
 
 import ColumnGeometry from './ColumnGeometry';
@@ -6,28 +6,38 @@ import voxelize from './voxelize';
 
 var config = {
     scale: 0.3,
-    roughness: 0,
-    metalness: 1,
+    metal: true,
+    roughness: 0.15,
     fstop: 1.4,
-    lockY: false,
-    move: true,
+
     sameColor: false,
     backgroundColor: '#000',
     color: '#777',
     colorContrast: 1.2,
+
     lightIntensity: 1,
-    lightColor: '#fff',
-    lightRotate: 30,
-    lightPitch: 40,
-    AO: 1.5,
+
+    ambientIntensity: 1,
+
     showEnvironment: false,
 
     barNumber: 80,
 
-    barBevel: 0.1,
-    barSize: 1.3
+    barBevel: 0.15,
+    barSize: 1.3,
+
+    zoomSensitivity: 1,
+
+    skybox: true
 };
 
+function parseColor(str) {
+    var arr = core.color.parse(str) || [0, 0, 0, 1];
+    arr[0] /= 255;
+    arr[1] /= 255;
+    arr[2] /= 255;
+    return arr;
+}
 
 var app = application.create('#main', {
 
@@ -41,7 +51,7 @@ var app = application.create('#main', {
 
         app.renderer.clearColor = [0, 0, 0, 1];
 
-        this._camera = app.createCamera([-50, 50, 50], [0, 0, 0]);
+        this._camera = app.createCamera([-30, 40, 30], [0, 0, 0]);
 
         var renderer = this._renderer = new ClayAdvancedRenderer(app.renderer, app.scene, app.timeline, {
             shadow: {
@@ -83,7 +93,7 @@ var app = application.create('#main', {
         }, this);
 
         this._columnMesh = app.createMesh(new ColumnGeometry(), {
-            metalness: config.metalness,
+            metalness: +config.metal,
             roughness: config.roughness
         });
         this._columnMesh.culling = false;
@@ -98,7 +108,20 @@ var app = application.create('#main', {
 
         var light = app.createDirectionalLight([-1, -1, -1], '#fff', 2);
         light.shadowResolution = 2048;
-        return app.createAmbientCubemapLight('./assets/env/pisa.hdr', 1, 0.5, 3).then(function () {
+        light.shadowBias = 0.01;
+
+        this._dirLight = light;
+
+        return app.createAmbientCubemapLight('./assets/env/pisa.hdr', 1, 0.5, 3).then(function (result) {
+            var skybox = new plugin.Skybox({
+                scene: app.scene
+            });
+            skybox.setEnvironmentMap(result.specular);
+            skybox.material.set('lod', 4);
+            skybox.material.define('fragment', 'RGBM_DECODE');
+            self._skybox = skybox;
+
+            self._ambientLight = result;
             renderer.render();
         });
     },
@@ -111,6 +134,16 @@ var app = application.create('#main', {
     },
 
     methods: {
+
+        updateLight: function (app) {
+            this._ambientLight.diffuse.intensity = config.ambientIntensity / 2;
+            this._ambientLight.specular.intensity = config.ambientIntensity;
+            this._dirLight.intensity = config.lightIntensity;
+            this._skybox[config.skybox ? 'attachScene' : 'detachScene'](app.scene);
+            this._renderer.render();
+
+            app.renderer.clearColor = parseColor(config.backgroundColor);
+        },
 
         setImage: function (app, img) {
             this._img = img;
@@ -126,7 +159,7 @@ var app = application.create('#main', {
 
         updateMaterial: function () {
             this._columnMesh.material.set({
-                metalness: config.metalness,
+                metalness: +config.metal,
                 roughness: config.roughness,
                 color: config.sameColor ? config.color : '#fff'
             });
@@ -144,8 +177,8 @@ var app = application.create('#main', {
             this._renderer.render();
         },
 
-        setViewControl: function () {
-
+        updateViewControl: function () {
+            this._control.zoomSensitivity = config.zoomSensitivity;
         }
     }
 });
@@ -156,22 +189,34 @@ loadingEl.parentNode.removeChild(loadingEl);
 
 var gui = new dat.GUI();
 
-gui.add(config, 'scale', 0, 1).onFinishChange(app.methods.updateColumns);
-gui.add(config, 'colorContrast', 0, 2).onFinishChange(app.methods.updateColumns);
+var genFolder = gui.addFolder('Generate');
 
-gui.add(config, 'sameColor').onChange(app.methods.updateMaterial);
-gui.addColor(config, 'color').onChange(app.methods.updateMaterial);
-
-['roughness', 'metalness'].forEach(function(propName) {
-    gui.add(config, propName, 0, 1).step(0.01).onFinishChange(app.methods.updateMaterial);
-});
-
+genFolder.add(config, 'scale', 0, 1).onFinishChange(app.methods.updateColumns);
+genFolder.add(config, 'colorContrast', 0, 2).onFinishChange(app.methods.updateColumns);
 
 gui.add(config, 'barNumber', 0, 256).onFinishChange(app.methods.updateColumns);
 gui.add(config, 'barSize', 0, 2).onFinishChange(app.methods.updateColumns);
 gui.add(config, 'barBevel', 0, 1).onFinishChange(app.methods.updateColumns);
 
+var matFolder = gui.addFolder('Material');
+matFolder.open();
+matFolder.add(config, 'metal').onChange(app.methods.updateMaterial);
+matFolder.add(config, 'roughness', 0, 1).step(0.01).onChange(app.methods.updateMaterial);
+matFolder.add(config, 'sameColor').onChange(app.methods.updateMaterial);
+matFolder.addColor(config, 'color').onChange(app.methods.updateMaterial);
+
+
+var lightFolder = gui.addFolder('Light');
+lightFolder.open();
+lightFolder.add(config, 'skybox').onChange(app.methods.updateLight);
+lightFolder.addColor(config, 'backgroundColor').onChange(app.methods.updateLight);
+lightFolder.add(config, 'lightIntensity', 0, 2).onChange(app.methods.updateLight);
+lightFolder.add(config, 'ambientIntensity', 0, 2).onChange(app.methods.updateLight);
 // gui.add(config, 'fstop', 0., 10).onFinishChange(app.methods.updatePostEffect);
+
+var controlFolder = gui.addFolder('Control');
+controlFolder.open();
+controlFolder.add(config, 'zoomSensitivity', 0, 2).onChange(app.methods.updateViewControl);
 
 
 function readFile(file) {
@@ -209,4 +254,9 @@ imgUploadEl.addEventListener('click', function() {
         readFile(e.target.files[0]);
     });
     $file.click();
+});
+
+
+window.addEventListener('resize', function () {
+    app.resize();
 });
