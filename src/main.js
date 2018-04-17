@@ -35,7 +35,7 @@ var app = application.create('#main', {
 
     devicePixelRatio: 1,
 
-    event: true,
+    // event: true,
 
     init: function (app) {
 
