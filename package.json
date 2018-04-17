@@ -1,0 +1,31 @@
+{
+  "name": "voxelize-image",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node node_modules/webpack/bin/webpack.js -w --devtool eval-cheap-module-source-map",
+    "build": "node node_modules/webpack/bin/webpack.js -p"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pissang/voxelize-image.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pissang/voxelize-image/issues"
+  },
+  "homepage": "https://github.com/pissang/voxelize-image#readme",
+  "dependencies": {
+    "claygl": "^1.1.1",
+    "d3-scale-chromatic": "^1.2.0",
+    "simplex-noise": "^2.4.0",
+    "zrender": "^4.0.3",
+    "claygl-advanced-renderer": "git+https://github.com/pissang/claygl-advanced-renderer.git#separate-circular-dof"
+  },
+  "devDependencies": {
+    "text-loader": "0.0.1",
+    "webpack": "^3.11.0"
+  }
+}
