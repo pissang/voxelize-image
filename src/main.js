@@ -181,6 +181,10 @@ var app = application.create('#main', {
 
         updateViewControl: function () {
             this._control.zoomSensitivity = config.zoomSensitivity;
+        },
+
+        render: function () {
+            this._renderer.render();
         }
     }
 });
@@ -262,4 +266,5 @@ imgUploadEl.addEventListener('click', function() {
 
 window.addEventListener('resize', function () {
     app.resize();
+    app.methods.render();
 });
