@@ -55,7 +55,8 @@ var app = application.create('#main', {
 
         var renderer = this._renderer = new ClayAdvancedRenderer(app.renderer, app.scene, app.timeline, {
             shadow: {
-                enable: true
+                enable: true,
+                blurSize: 5
             },
             temporalSuperSampling: {
                 dynamic: false
